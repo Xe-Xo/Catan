@@ -3,6 +3,7 @@ import pygame
 import random
 import math
 from grid import *
+from players import *
 
 ## TO DO -- BETTER WAY TO TREAT GLOBALS THAT CAN BE ACCESSED BY MAIN AND GAME
 class GAME_GLOBALS():
@@ -59,7 +60,7 @@ class GAME_GLOBALS():
                         12:1
                         }
 
-class GameState():
+class Scene():
 
     """This class represents an instance of the gamestate"""
     """subclass to be used for State Machine between Main Menu, Game and GameOver screens"""
@@ -151,7 +152,7 @@ class GameState():
             new_color_list.append(new_color)
         return tuple(new_color_list)
 
-class Game(GameState):
+class Game(Scene):
 
     """This class represents an instance of the game""" 
 
@@ -167,9 +168,29 @@ class Game(GameState):
         self.setup_grid_numbers() #Randomly apply numbers to the board
         self.setup_grid_resources() #Randomly apply resources to the board
         self.setup_corner_ranks() #Calculate the strength of each corner
-        self.calculate_resource_scarcity()
 
         """Setup players"""
+        self.setup_players()
+
+
+    def setup_players(self):
+        """Setup players"""
+        for playerindex in range(0,4):
+            self.players.append(Human(playerindex))
+
+        self.game_state_queue =    [
+                                    (0,"place_settlement"),(0,"place_road"),
+                                    (1,"place_settlement"),(1,"place_road"),
+                                    (2,"place_settlement"),(2,"place_road"),
+                                    (3,"place_settlement"),(3,"place_road"),
+                                    (3,"place_settlement"),(3,"place_road"),
+                                    (2,"place_settlement"),(2,"place_road"),
+                                    (1,"place_settlement"),(1,"place_road"),
+                                    (0,"place_settlement"),(0,"place_road"),
+                                    ]
+
+        self.turn, self.current_game_state = self.game_state_queue.pop(0)
+
 
     def process_events(self):
         """Process all the events. Return a True if we need to return to the Main Menu"""
@@ -183,13 +204,39 @@ class Game(GameState):
         pass
 
     def display_frame(self,screen):
-        self.draw_background(screen)
-        self.draw_hexes(screen)
-        self.draw_hexes_scarcity(screen)
-        self.draw_corners(screen)
+        if self.current_game_state == "place_settlement":
+            self.display_place_settlement(screen,self.turn)
+        elif self.current_game_state == "place_road":
+            self.display_place_road(self,self.turn)
 
         pygame.display.update()
 
+
+    """Display Methods"""
+    def display_place_settlement(self,screen,playerindex):
+        self.draw_background(screen)
+        self.draw_hexes(screen)
+        #self.draw_settlements(screen)
+        #self.draw_roads(screen)
+        #self.draw_allowed_settlements(screen,playerindex)
+
+    def display_place_road(self,screen,playerindex):
+        self.draw_background(screen)
+        self.draw_hexes(screen)
+        #self.draw_settlements(screen)
+        #self.draw_roads(screen)
+        #self.draw_allowed_roads(screen,playerindex)
+
+    """Player Methods"""
+    def next_player_index(self,current_player_index):
+        next_player_index = current_player_index + 1
+        if next_player_index >= 4:
+            return 0
+        else:
+            next_player_index
+
+    def next_player(self,player):
+        return self.players[self.next_player_index(player.playerindex)]
 
     """Setup Grid Methods"""
 
@@ -266,10 +313,7 @@ class Game(GameState):
                 
             self.corner_ranks[corner.coords.tuple()] = int(rank_value)
 
-
     """Render Methods"""
-
-
 
     def draw_background(self,screen):
         screen.fill(GAME_GLOBALS.BLUE)
@@ -298,6 +342,10 @@ class Game(GameState):
             self.text_to_screen(screen,string,self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False),size=20,offset=(0,10))
 
     def draw_corners(self,screen):
+        pass
+
+
+    def draw_corners_ranks(self,screen):
         for corner in self.grid.corners.values():
             cx,cy,cz = corner.coords.tuple()
             color = self.fix_color((int(255/14*(self.corner_ranks[corner.coords.tuple()]-1)),150,150))
@@ -308,11 +356,7 @@ class Game(GameState):
                 print(color)
             self.text_to_screen(screen,self.corner_ranks[corner.coords.tuple()],self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,cx,cy,cz,gap=False),size=16)
 
-
-
-
-
-class MainMenu(GameState):
+class MainMenu(Scene):
 
     def __init__(self):
         super().__init__()
@@ -350,6 +394,7 @@ class MainMenu(GameState):
 
     def display_frame(self,screen):
         self.draw_background(screen)
+        self.draw_menu_background(screen)
         self.draw_title(screen)
         self.draw_start_button(screen)
         pygame.display.update()    
@@ -374,6 +419,16 @@ class MainMenu(GameState):
 
     def draw_title(self,screen):
         self.text_to_screen(screen,"Settlers of Catan", (GAME_GLOBALS.SCREEN_CENTER[0], 60), size=100, color=GAME_GLOBALS.GREEN)
+
+    def draw_menu_background(self,screen):
+
+        w, h = GAME_GLOBALS.SCREEN_WIDTH/3 , GAME_GLOBALS.SCREEN_HEIGHT/3
+        x, y = GAME_GLOBALS.SCREEN_CENTER
+        x = x - w/2
+        y = y - h/2
+
+        pygame.draw.rect(screen,GAME_GLOBALS.BLACK,(x,y,w,h))
+
 
     def draw_start_button(self,screen):
         center_x, center_y = GAME_GLOBALS.SCREEN_CENTER
