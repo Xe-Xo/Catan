@@ -17,22 +17,20 @@ def main():
     done = False
     clock = pygame.time.Clock()
 
-    gamestate = MainMenu()
+    scene = MainMenu()
 
     while not done:
         # Process events (keystrokes, mouse clicks, etc)
-        done, gamestate = gamestate.process_events()
-        #print(type(gamestate))
-
+        done, scene = scene.process_events()
 
         # Update game logic
-        gamestate.run_logic()
+        scene.run_logic()
 
         # Render current frame
-        gamestate.display_frame(screen)
+        scene.display_frame(screen)
 
         #Pause for the next frame
-        clock.tick(600)
+        clock.tick(60)
 
     #close window and exit
     pygame.quit()
