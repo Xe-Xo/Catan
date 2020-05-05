@@ -83,8 +83,8 @@ class ResourceBunch():
         else:
             return False
 
-
-
+    def __le__(self,other):
+        pass
 
     def __hash__(self):
         return hash(self.tuple)
@@ -104,24 +104,49 @@ class ResourceBunch():
             count += resource
         return count
 
-    def possible_discards(self,resources_discard_to):
+    def possible_discards_to_count(self,resources_discard_to):
+
+        #when discarding down to a specific number
+        #returns list of possible resource bunches for required discard
+
         possible_discards = []
         for woodcount in range(0,self.wood+1):
             for brickcount in range(0,self.brick+1):
                 for orecount in range(0,self.ore+1):
                     for wheatcount in range(0,self.wheat+1):
                         for sheepcount in range(0,self.sheep+1):
-                            check_rb = ResourceBunch(woodcount,brickcount,orecount,wheatcount,sheepcount)
-                            remaining_rb = self - check_rb
+                            discard_rb = ResourceBunch(woodcount,brickcount,orecount,wheatcount,sheepcount)
+                            remaining_rb = self - discard_rb
                             if remaining_rb.count() == resources_discard_to:
-                                possible_discards.append(remaining_rb)
+                                possible_discards.append(discard_rb)
+                            else:
+                                pass
+        
+        return possible_discards
+
+    def possible_discards_to_rb(self,resourcebunch_to_keep):
+
+        #when discarding down to a specific resource bunch
+        #returns list of possible resource bunches to have remaining kept amount
+
+        possible_discards = []
+        for woodcount in range(0,self.wood+1):
+            for brickcount in range(0,self.brick+1):
+                for orecount in range(0,self.ore+1):
+                    for wheatcount in range(0,self.wheat+1):
+                        for sheepcount in range(0,self.sheep+1):
+                            discard_rb = ResourceBunch(woodcount,brickcount,orecount,wheatcount,sheepcount)
+                            remaining_rb = self - discard_rb
+                            if remaining_rb >= resourcebunch_to_keep:
+                                possible_discards.append(discard_rb)
                             else:
                                 pass
         
         return possible_discards
 
 
-
-test = ResourceBunch(1,2,2,2,2)
-for rb in test.possible_discards(4):
-    print(rb)
+if __name__ == "__main__":
+    
+    test = ResourceBunch(2,2,1,1,1)
+    for rb in test.possible_discards_to_rb(ResourceBunch.ROAD()*2):
+        print(rb,rb.count())
