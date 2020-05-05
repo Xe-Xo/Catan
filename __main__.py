@@ -1,7 +1,5 @@
 import pygame
-from game import GAME_GLOBALS, Game
-
-
+from game import *
 
 def main():
     """Main program function. """
@@ -19,17 +17,18 @@ def main():
     done = False
     clock = pygame.time.Clock()
 
-    game = Game()
+    gamestate = MainMenu()
 
     while not done:
         # Process events (keystrokes, mouse clicks, etc)
-        done = game.process_events()
+        done, gamestate = gamestate.process_events()
+
 
         # Update game logic
-        game.run_logic()
+        gamestate.run_logic()
 
         # Render current frame
-        game.display_frame(screen)
+        gamestate.display_frame(screen)
 
         #Pause for the next frame
         clock.tick(60)

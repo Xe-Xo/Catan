@@ -2,7 +2,6 @@
 import pygame
 import random
 import math
-
 from grid import *
 
 ## TO DO -- BETTER WAY TO TREAT GLOBALS THAT CAN BE ACCESSED BY MAIN AND GAME
@@ -60,11 +59,51 @@ class GAME_GLOBALS():
                         12:1
                         }
 
-class Game():
+class GameState():
+
+    """This class represents an instance of the gamestate"""
+    """subclass to be used for State Machine between Main Menu, Game and GameOver screens"""
+
+
+    def __init__(self):
+        pass
+
+    def process_events(self):
+        """Process all the events. Return a True if we need to close the window"""
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return True, self
+        return False, self
+
+    def run_logic(self):
+        pass
+
+    def display_frame(self,screen):
+        pygame.display.update()
+
+    def text_to_screen(self,screen,text,xy_tuple,size=16,color = GAME_GLOBALS.BLACK, font_type = None,offset=(0,0)):
+        try:
+            text = str(text)
+            font = pygame.font.Font(font_type,size)
+            text = font.render(text,True,color)
+            x_offset, y_offset = offset
+            x_offset -= text.get_rect().width / 2
+            y_offset -= text.get_rect().height / 2 
+            x, y = xy_tuple
+            xy_tuple = x + x_offset, y + y_offset
+            screen.blit(text,xy_tuple)
+
+        except Exception as e:
+            print('Font Error')
+            raise e
+
+class Game(GameState):
 
     """This class represents an instance of the game""" 
 
     def __init__(self):
+        super().__init__()
         """Constructor. create all our attributes and initialise the game"""
         self.game_over = False
 
@@ -88,7 +127,8 @@ class Game():
             return self.game_over
 
     def run_logic(self):
-        pass
+        
+        return self
 
     def display_frame(self,screen):
         self.draw_background(screen)
@@ -226,22 +266,6 @@ class Game():
                 print(color)
             self.text_to_screen(screen,self.corner_ranks[corner.coords.tuple()],self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,cx,cy,cz,gap=False),size=16)
 
-    def text_to_screen(self,screen,text,xy_tuple,size=16,color = GAME_GLOBALS.BLACK, font_type = None,offset=(0,0)):
-        try:
-            text = str(text)
-            font = pygame.font.Font(font_type,size)
-            text = font.render(text,True,color)
-            x_offset, y_offset = offset
-            x_offset -= text.get_rect().width / 2
-            y_offset -= text.get_rect().height / 2 
-            x, y = xy_tuple
-            xy_tuple = x + x_offset, y + y_offset
-            screen.blit(text,xy_tuple)
-
-        except Exception as e:
-            print('Font Error')
-            raise e
-
     def coord_to_point(self,center_xy,x,y,z,gap=True):
 
         #starting center point generally the xy of 0,0,0 hexagon
@@ -273,33 +297,17 @@ class Game():
             corner_points.append(self.coord_to_point(hex_center,px,py,pz,gap=gap))
         return corner_points
 
+class MainMenu(GameState):
+    
+    def __init__(self):
+        super().__init__()
 
+    def draw_background(self):
+        screen.fill(GAME_GLOBALS.BLUE)
 
+    def draw_title(self):
+        pass
 
-
-
-
-
-
-
-
-
-
-    #
-    #resources_possible = [4,4,3,3]
-
-    #resource_strings = {
-    #                    "WOOD": (1,0,0,0,0),
-    #                    "BRICK":(0,1,0,0,0),
-    #                    "ORE":  (0,0,1,0,0),
-    #                    "WHEAT":(0,0,0,1,0),
-    #                    "SHEEP":(0,0,0,0,1)
-    #                    }
-
-    #build = {
-    #        "Road":(1,1,0,0,0),
-    #        "Settlement":(1,1,0,1,1),
-    #        "City":(0,0,3,2,0),
-    #        "Development":(0,0,1,1,1)
-    #        }
+    def draw_buttons(self):
+        pass    
 
