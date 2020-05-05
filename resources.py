@@ -84,7 +84,31 @@ class ResourceBunch():
             return False
 
     def __le__(self,other):
-        pass
+        if type(other) == ResourceBunch:
+            for r_idx in range(0,len(self.tuple)):
+                if self.tuple[r_idx] > other.tuple[r_idx]:
+                    return False
+            return True
+        else:
+            return False
+
+    def __gt__(self,other):
+        if type(other) == ResourceBunch:
+            for r_idx in range(0,len(self.tuple)):
+                if self.tuple[r_idx] <= other.tuple[r_idx]:
+                    return False
+            return True
+        else:
+            return False
+
+    def __lt__(self,other):
+        if type(other) == ResourceBunch:
+            for r_idx in range(0,len(self.tuple)):
+                if self.tuple[r_idx] >= other.tuple[r_idx]:
+                    return False
+            return True
+        else:
+            return False  
 
     def __hash__(self):
         return hash(self.tuple)
@@ -92,6 +116,19 @@ class ResourceBunch():
     def __repr__(self):
         return f"Wd:{self.wood}, Br:{self.brick}, Or:{self.ore}, Wh:{self.wheat}, Sh:{self.sheep}"
     
+    def discard(self,other):
+        return ResourceBunch(self.clamp(self.wood-other.wood,0),self.clamp(self.brick-other.brick,0),self.clamp(self.ore-other.ore,0),self.clamp(self.wheat-other.wheat,0),self.clamp(self.sheep-other.sheep,0))
+        
+    def clamp(self,current_int,min_int=None,max_int=None):
+        if min_int is not None:
+            if current_int < min_int:
+                return min_int
+        elif max_int is not None:
+            if current_int > max_int:
+                return max_int
+        else:
+            current_int
+
     def any_negative(self):
         for resource in self.tuple:
             if resource < 0:
