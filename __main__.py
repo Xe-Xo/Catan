@@ -22,6 +22,7 @@ def main():
     while not done:
         # Process events (keystrokes, mouse clicks, etc)
         done, gamestate = gamestate.process_events()
+        #print(type(gamestate))
 
 
         # Update game logic
@@ -31,7 +32,7 @@ def main():
         gamestate.display_frame(screen)
 
         #Pause for the next frame
-        clock.tick(60)
+        clock.tick(600)
 
     #close window and exit
     pygame.quit()
