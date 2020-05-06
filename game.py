@@ -111,7 +111,6 @@ class Scene():
             print('Font Error')
             raise e
 
-
     def point_to_grid_coord(self,center_xy,xy_point,set_sign=None):
 
         mouse_x, mouse_y = xy_point #Location of mouse in window
@@ -128,7 +127,6 @@ class Scene():
         hex_x = 0 - hex_y - hex_z
         return Coords(hex_x,hex_y,hex_z).round(set_total=set_sign) 
 
-    
     def coord_to_point(self,center_xy,x,y,z,gap=True):
         #starting center point generally the xy of 0,0,0 hexagon
         #however this changes if finding the points of a hexagon not in the center
@@ -190,7 +188,9 @@ class Game(Scene):
 
         """Setup players"""
         self.setup_players()
-
+        self.setup_settlements()
+        self.setup_ports()
+        self.setup_roads()
 
     def setup_players(self):
         """Setup players"""
@@ -204,26 +204,31 @@ class Game(Scene):
                                     (1,"place_settlement"),(1,"place_road"),(0,"place_settlement"),(0,"place_road")
                                     ]
 
-        self.turn, self.current_game_state = self.game_state_queue.pop(0)
+        self.next_game_state()
 
 
     def process_events(self):
-        """Process all the events. Return a True if we need to return to the Main Menu"""
+        """Process all the events. Return a True if we need to close the Window"""
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return True, self
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                grid_coord = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=0)
-                cornerpos_coord = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=1)
-                cornerneg_coord = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=-1)
-                print(grid_coord,cornerpos_coord,cornerneg_coord)
             elif self.current_game_state == "place_settlement":
-
-
-                return False, self
-
-
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    coord_pointing = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos())
+                    if self.valid_settlement(self.turn,coord_pointing):
+                        self.place_settlement(self.turn,coord_pointing)
+                        self.next_game_state()
+                        return False,self
+            elif self.current_game_state == "place_road":
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    coord_pointing_neg = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=-1)
+                    coord_pointing_pos = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=1)
+                    road_pos = (coord_pointing_neg.x, coord_pointing_neg.y, coord_pointing_pos.x, coord_pointing_pos.y)
+                    if self.valid_road(self.turn,road_pos):
+                        self.place_road(self.turn, road_pos)
+                        self.next_game_state()
+                        return False,self
         return self.game_over, self
 
     def run_logic(self):
@@ -234,7 +239,8 @@ class Game(Scene):
             self.display_place_settlement(screen,self.turn)
         elif self.current_game_state == "place_road":
             self.display_place_road(self,self.turn)
-
+        elif self.current_game_state == "player_turn":
+            self.display_default(self,self.turn)
         pygame.display.update()
 
 
@@ -263,6 +269,40 @@ class Game(Scene):
 
     def next_player(self,player):
         return self.players[self.next_player_index(player.playerindex)]
+
+    """Game State Methods"""
+    def next_game_state(self):
+        try:
+            self.turn, self.current_game_sta
+            te = self.game_state_queue.pop(0)
+        except:
+            self.turn, self.current_game_state = next_player_index(self.turn), "player_turn"
+
+    def valid_settlement(self,player_id,coords,limit_by_road=False):
+
+        #TO DO - this is complicated when it really shouldnt be.
+        #clean up this trainwreck
+
+        if coords in self.grid.corners.keys:
+            corner_selected = self.grid.corners[coords]
+            for other_corners_coords in corner_selected.connected_corner_coords():
+                try:
+                    if self.settlements[other_corners_coords] != -1: 
+                        return False
+                except:
+                    pass
+            if limit_by_road:
+                for road_coords in corner_selected.connected_road_coords():
+                    if self.roads[road_coords] == player_id:
+                        return True
+                return False
+            else:
+                return True
+        else:
+            return False
+
+    def valid_road(self,player_id,roadcoords):
+        pass
 
     """Setup Grid Methods"""
 
@@ -369,7 +409,6 @@ class Game(Scene):
 
     def draw_corners(self,screen):
         pass
-
 
     def draw_corners_ranks(self,screen):
         for corner in self.grid.corners.values():
