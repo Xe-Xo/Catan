@@ -41,9 +41,10 @@ class GAME_GLOBALS():
 
     HEX_DIAMETER = min(SCREEN_WIDTH/3*2,SCREEN_HEIGHT)/NUMBER_HEXES_WIDTH
     HEX_GAP = HEX_DIAMETER/3
+    G_HEX_DIAMETER = HEX_DIAMETER - HEX_GAP
     ALPHA = HEX_DIAMETER/4
     BETA = math.sqrt(3) * ALPHA
-    G_ALPHA = (HEX_DIAMETER-HEX_GAP)/4
+    G_ALPHA = (G_HEX_DIAMETER)/4
     G_BETA = math.sqrt(3) * G_ALPHA
 
     ROLL_RANK =   {
@@ -110,6 +111,25 @@ class Scene():
             print('Font Error')
             raise e
 
+
+    def point_to_grid_coord(self,center_xy,xy_point,gap=True):
+
+        #See Readme notes for detailed breakdown
+
+        mouse_x, mouse_y = xy_point #Location of mouse in window
+        center_x, center_y = center_xy #Location of the centerpoint of the grid
+        pixel_x, pixel_y = mouse_x-center_x,mouse_y-center_y #x,y to be turned into grid coords
+        
+        hex_y = -2*pixel_x/(math.sqrt(3)*GAME_GLOBALS.HEX_DIAMETER) + (2*pixel_y)/(3*GAME_GLOBALS.HEX_DIAMETER)
+        print(-2*pixel_x/(math.sqrt(3)*GAME_GLOBALS.HEX_DIAMETER))
+        print(-2*pixel_y/(3*GAME_GLOBALS.HEX_DIAMETER))
+
+
+        hex_z = 0*pixel_x + -4*pixel_y/(3*GAME_GLOBALS.HEX_DIAMETER)
+        hex_x = 0 - hex_y - hex_z
+        return hex_x,hex_y,hex_z 
+
+
     def coord_to_point(self,center_xy,x,y,z,gap=True):
         #starting center point generally the xy of 0,0,0 hexagon
         #however this changes if finding the points of a hexagon not in the center
@@ -175,18 +195,14 @@ class Game(Scene):
 
     def setup_players(self):
         """Setup players"""
+        self.players = []
         for playerindex in range(0,4):
             self.players.append(Human(playerindex))
 
-        self.game_state_queue =    [
-                                    (0,"place_settlement"),(0,"place_road"),
-                                    (1,"place_settlement"),(1,"place_road"),
-                                    (2,"place_settlement"),(2,"place_road"),
-                                    (3,"place_settlement"),(3,"place_road"),
-                                    (3,"place_settlement"),(3,"place_road"),
-                                    (2,"place_settlement"),(2,"place_road"),
-                                    (1,"place_settlement"),(1,"place_road"),
-                                    (0,"place_settlement"),(0,"place_road"),
+        self.game_state_queue =    [(0,"place_settlement"),(0,"place_road"),(1,"place_settlement"),(1,"place_road"),
+                                    (2,"place_settlement"),(2,"place_road"),(3,"place_settlement"),(3,"place_road"),
+                                    (3,"place_settlement"),(3,"place_road"),(2,"place_settlement"),(2,"place_road"),
+                                    (1,"place_settlement"),(1,"place_road"),(0,"place_settlement"),(0,"place_road")
                                     ]
 
         self.turn, self.current_game_state = self.game_state_queue.pop(0)
@@ -198,6 +214,14 @@ class Game(Scene):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return True, self
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                print(self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),gap=False))
+            elif self.current_game_state == "place_settlement":
+
+
+                return False, self
+
+
         return self.game_over, self
 
     def run_logic(self):
@@ -374,7 +398,6 @@ class MainMenu(Scene):
                 for button_coords in self.buttons.keys():
                     x,y,w,h = button_coords
                     if self.button_check(pygame.mouse.get_pos(),x,y,w,h):
-                        print(pygame.mouse.get_pos(),self.buttons.keys())
                         for function in self.buttons[button_coords]:
                             if function == "game_start":
                                 return False, self.move_state(1)
