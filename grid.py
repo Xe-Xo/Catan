@@ -74,6 +74,12 @@ class Coords():
         #as the original numbers
         #The component with the largest change will be used to reset the total constraint
         #should only be a problem at pixel perfect selections.
+        #
+        #set_total used to get closest coord with that total
+        #eg. Pos Corners = +1
+        #    Neg Corners = -1
+        #    Grid Locations = 0
+        #    Roads are locations between Pos and Neg Corners so the road selected is the Road between Pos and Neg Corners!
 
         rx = round(self.x)
         ry = round(self.y)
