@@ -114,20 +114,21 @@ class Scene():
 
     def point_to_grid_coord(self,center_xy,xy_point,gap=True):
 
-        #See Readme notes for detailed breakdown
-
         mouse_x, mouse_y = xy_point #Location of mouse in window
         center_x, center_y = center_xy #Location of the centerpoint of the grid
         pixel_x, pixel_y = mouse_x-center_x,mouse_y-center_y #x,y to be turned into grid coords
         
+        #coord to point uses matrix multiplication for calculation of x,y
+        #after rearranging formula into a square matrix (subsistute x = 0 - y - z) we can calculate the inverse matrix that can be multiplied by pixel_x, pixel_y
+        #see https://www.wolframalpha.com/input/?i=24*%7B%7B-sqrt%283%29%2C1%7D%2C%7B0%2C2%7D%7D*%7Bx%2Cy%7D+
+        #See Readme notes for detailed breakdown
+        
         hex_y = -2*pixel_x/(math.sqrt(3)*GAME_GLOBALS.HEX_DIAMETER) + (2*pixel_y)/(3*GAME_GLOBALS.HEX_DIAMETER)
-        print(-2*pixel_x/(math.sqrt(3)*GAME_GLOBALS.HEX_DIAMETER))
-        print(-2*pixel_y/(3*GAME_GLOBALS.HEX_DIAMETER))
-
-
         hex_z = 0*pixel_x + -4*pixel_y/(3*GAME_GLOBALS.HEX_DIAMETER)
         hex_x = 0 - hex_y - hex_z
         return hex_x,hex_y,hex_z 
+
+    
 
 
     def coord_to_point(self,center_xy,x,y,z,gap=True):
