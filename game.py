@@ -112,7 +112,7 @@ class Scene():
             raise e
 
 
-    def point_to_grid_coord(self,center_xy,xy_point,gap=True):
+    def point_to_grid_coord(self,center_xy,xy_point,set_sign=None):
 
         mouse_x, mouse_y = xy_point #Location of mouse in window
         center_x, center_y = center_xy #Location of the centerpoint of the grid
@@ -126,11 +126,9 @@ class Scene():
         hex_y = -2*pixel_x/(math.sqrt(3)*GAME_GLOBALS.HEX_DIAMETER) + (2*pixel_y)/(3*GAME_GLOBALS.HEX_DIAMETER)
         hex_z = 0*pixel_x + -4*pixel_y/(3*GAME_GLOBALS.HEX_DIAMETER)
         hex_x = 0 - hex_y - hex_z
-        return hex_x,hex_y,hex_z 
+        return Coords(hex_x,hex_y,hex_z).round(set_total=set_sign) 
 
     
-
-
     def coord_to_point(self,center_xy,x,y,z,gap=True):
         #starting center point generally the xy of 0,0,0 hexagon
         #however this changes if finding the points of a hexagon not in the center
@@ -216,7 +214,10 @@ class Game(Scene):
             if event.type == pygame.QUIT:
                 return True, self
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                print(self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),gap=False))
+                grid_coord = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=0)
+                cornerpos_coord = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=1)
+                cornerneg_coord = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=-1)
+                print(grid_coord,cornerpos_coord,cornerneg_coord)
             elif self.current_game_state == "place_settlement":
 
 

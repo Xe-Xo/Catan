@@ -68,6 +68,40 @@ class Coords():
         coords[index] = 0
         return self + Convert_list_to_coords(coords)
 
+    def round(self,set_total=None):
+
+        #No guarantee that the sum of rounded numbers will equal the same total
+        #as the original numbers
+        #The component with the largest change will be used to reset the total constraint
+        #should only be a problem at pixel perfect selections.
+
+        rx = round(self.x)
+        ry = round(self.y)
+        rz = round(self.z)
+
+        x_dif = abs(rx - self.x)
+        y_dif = abs(ry - self.y)
+        z_dif = abs(ry - self.z)
+
+        if x_dif > y_dif and x_dif > z_dif:
+            if set_total is None:
+                rx = self.total-ry-rz
+            else:
+                rx = set_total-ry-rz
+        elif y_dif > z_dif:
+            if set_total is None:
+                ry = self.total-rx-rz
+            else:
+                ry = set_total-rx-rz
+        else:
+            if set_total is None:
+                rz = self.total-rx-ry
+            else:
+                rz = set_total-rx-ry
+        return Coords(rx,ry,rz)
+
+
+
 class Corner():
 
     def __init__(self,grid,coords):
