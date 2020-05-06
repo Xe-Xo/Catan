@@ -106,8 +106,6 @@ class Coords():
                 rz = set_total-rx-ry
         return Coords(rx,ry,rz)
 
-
-
 class Corner():
 
     def __init__(self,grid,coords):
@@ -127,13 +125,25 @@ class Corner():
     def other_corner_coords(self,dirindex):
         return self.coords.add_exception(-self.sign,dirindex)
 
-    def connected_hexes_coords(self):
-        connected_hexes_coords = []
+    def connected_corner_coords(self):
+        connected_corners_coords = []
         for axis_int in Coords.AXIS:
+            connected_corners_coords.append(self.other_corner_coords(axis_int))
+        return connected_corners_coords
+
+    def connected_hexes_coords(self,axis=None):
+        connected_hexes_coords = []
+        if axis is None:
+            for axis_int in Coords.AXIS:
+                coord_list = [0] * 3
+                coord_list[axis_int] = -self.sign
+                connected_hexes_coords.append(self.coords + Coords.from_tuple(tuple(coord_list)))
+            return connected_hexes_coords
+        else:
             coord_list = [0] * 3
-            coord_list[axis_int] = -self.sign
+            coord_list[axis] = -self.sign
             connected_hexes_coords.append(self.coords + Coords.from_tuple(tuple(coord_list)))
-        return connected_hexes_coords
+            return connected_hexes_coords
 
 class Hex():
 
