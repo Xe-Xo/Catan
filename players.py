@@ -1,9 +1,12 @@
 from resources import ResourceBunch
+import random
+
 
 class Player():
     def __init__(self,playerindex):
         self.resources = ResourceBunch(0,0,0,0,0)
         self.playerindex = playerindex
+        self.color = random.randint(0,255), random.randint(0,255), random.randint(0,255)
 
     def add_resouces(self,resourcebunch):
         self.resources = self.resources + resourcebunch
