@@ -104,7 +104,7 @@ class Coords():
                 rz = self.total-rx-ry
             else:
                 rz = set_total-rx-ry
-        return Coords(rx,ry,rz)
+        return Coords(int(rx),int(ry),int(rz))
 
 class Corner():
 
