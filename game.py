@@ -175,6 +175,8 @@ class Game(Scene):
 
     def __init__(self):
         super().__init__()
+
+        self.debug = False
         """Constructor. create all our attributes and initialise the game"""
         self.game_over = False
 
@@ -191,21 +193,6 @@ class Game(Scene):
         self.setup_settlements()
         self.setup_ports()
         self.setup_roads()
-
-    def setup_players(self):
-        """Setup players"""
-        self.players = []
-        for playerindex in range(0,4):
-            self.players.append(Human(playerindex))
-
-        self.game_state_queue =    [(0,"place_settlement"),(0,"place_road"),(1,"place_settlement"),(1,"place_road"),
-                                    (2,"place_settlement"),(2,"place_road"),(3,"place_settlement"),(3,"place_road"),
-                                    (3,"place_settlement"),(3,"place_road"),(2,"place_settlement"),(2,"place_road"),
-                                    (1,"place_settlement"),(1,"place_road"),(0,"place_settlement"),(0,"place_road")
-                                    ]
-
-        self.next_game_state()
-
 
     def process_events(self):
         """Process all the events. Return a True if we need to close the Window"""
@@ -235,7 +222,9 @@ class Game(Scene):
         pass
 
     def display_frame(self,screen):
-        if self.current_game_state == "place_settlement":
+        if self.debug == True:
+            self.display_debug(screen)
+        elif self.current_game_state == "place_settlement":
             self.display_place_settlement(screen,self.turn)
         elif self.current_game_state == "place_road":
             self.display_place_road(self,self.turn)
@@ -245,12 +234,16 @@ class Game(Scene):
 
 
     """Display Methods"""
+
+    def display_debug(self,screen):
+        pass
+
     def display_place_settlement(self,screen,playerindex):
         self.draw_background(screen)
         self.draw_hexes(screen)
-        #self.draw_settlements(screen)
+        self.draw_game_state(screen)
+        self.draw_valid_settlements(screen,playerindex)
         #self.draw_roads(screen)
-        #self.draw_allowed_settlements(screen,playerindex)
 
     def display_place_road(self,screen,playerindex):
         self.draw_background(screen)
@@ -259,7 +252,23 @@ class Game(Scene):
         #self.draw_roads(screen)
         #self.draw_allowed_roads(screen,playerindex)
 
+
     """Player Methods"""
+
+    def setup_players(self):
+        """Setup players"""
+        self.players = []
+        for playerindex in range(0,4):
+            self.players.append(Human(playerindex))
+
+        self.game_state_queue =    [(0,"place_settlement"),(0,"place_road"),(1,"place_settlement"),(1,"place_road"),
+                                    (2,"place_settlement"),(2,"place_road"),(3,"place_settlement"),(3,"place_road"),
+                                    (3,"place_settlement"),(3,"place_road"),(2,"place_settlement"),(2,"place_road"),
+                                    (1,"place_settlement"),(1,"place_road"),(0,"place_settlement"),(0,"place_road")
+                                    ]
+
+        self.next_game_state()
+
     def next_player_index(self,current_player_index):
         next_player_index = current_player_index + 1
         if next_player_index >= 4:
@@ -270,20 +279,23 @@ class Game(Scene):
     def next_player(self,player):
         return self.players[self.next_player_index(player.playerindex)]
 
+    def place_settlement(self,player_index,coords):
+        self.settlements[coords] = player_index
+
     """Game State Methods"""
+
     def next_game_state(self):
         try:
-            self.turn, self.current_game_sta
-            te = self.game_state_queue.pop(0)
+            self.turn, self.current_game_state = self.game_state_queue.pop(0)
         except:
-            self.turn, self.current_game_state = next_player_index(self.turn), "player_turn"
+            self.turn, self.current_game_state = self.next_player_index(self.turn), "player_turn"
 
     def valid_settlement(self,player_id,coords,limit_by_road=False):
 
         #TO DO - this is complicated when it really shouldnt be.
         #clean up this trainwreck
 
-        if coords in self.grid.corners.keys:
+        if coords in self.grid.corners.keys():
             corner_selected = self.grid.corners[coords]
             for other_corners_coords in corner_selected.connected_corner_coords():
                 try:
@@ -349,17 +361,30 @@ class Game(Scene):
         print("Grid Resources applied!")
 
     def calculate_resource_scarcity(self):
+
+        #from 36 rolls with even distribution
+        #the probability of each resource being given out
+
+        #resouce scarcity = SUM(Possible ways number can be rolled 
+
+        #eg. 2 can be rolled 1 way and there is one placement on board.
+        #    3 can be rolled 2 ways and there is two placements on board.
+        # 
+        # sum of this (2x1+2x2+3x2+.....) = 58
+
         resource_scarcity = []
         for resource_index in [0,1,2,3,4]:
             totalpoints = 0
             for hex_tuple in self.grid_resources.keys():
                 if self.grid_resources[hex_tuple] == resource_index:
-                    totalpoints += GAME_GLOBALS.ROLL_RANK[self.grid_numbers[hex_tuple]]
-            resource_scarcity_points = totalpoints/58*5
-            resource_scarcity.append(resource_scarcity_points)
+                    totalpoints += GAME_GLOBALS.ROLL_RANK[self.grid_numbers[hex_tuple]]/58
+            resource_scarcity.append(totalpoints)
         return resource_scarcity
 
     def setup_corner_ranks(self):
+
+        #Calculates the strength of a corner given the overall resource scarcity
+        #
 
         self.corner_ranks = {}
 
@@ -378,6 +403,30 @@ class Game(Scene):
                     rank_value += 0
                 
             self.corner_ranks[corner.coords.tuple()] = int(rank_value)
+
+    def setup_settlements(self):
+        self.settlements = {}
+        for corner_tuple in self.grid.corners.keys():
+            self.settlements[corner_tuple] = -1
+
+    def setup_roads(self):
+        self.roads = {}
+        for road_tuple in self.grid.roads.keys():
+            self.roads[road_tuple] = -1
+
+    def setup_ports(self):
+        self.ports = {}
+
+        possible_ports = [
+                        ((),("sheep",2)),
+                        ((),("wood",2)),
+                        ((),("brick",2)),
+                        ((),("ore",2)),
+                        ((),("wheat",2)),
+                        ((),("any",3)),
+                        ((),("any",3)),
+                        ((),("any",3))
+                        ]
 
     """Render Methods"""
 
@@ -410,6 +459,10 @@ class Game(Scene):
     def draw_corners(self,screen):
         pass
 
+    def draw_game_state(self,screen):
+        self.text_to_screen(screen,self.current_game_state,(100,100),size=32,color=GAME_GLOBALS.RED)
+        self.text_to_screen(screen,self.turn,(150,150),size=32,color=GAME_GLOBALS.RED)
+    
     def draw_corners_ranks(self,screen):
         for corner in self.grid.corners.values():
             cx,cy,cz = corner.coords.tuple()
@@ -420,6 +473,7 @@ class Game(Scene):
             except:
                 print(color)
             self.text_to_screen(screen,self.corner_ranks[corner.coords.tuple()],self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,cx,cy,cz,gap=False),size=16)
+
 
 class MainMenu(Scene):
 
@@ -446,7 +500,6 @@ class MainMenu(Scene):
                                 return True, self
         return False, self
 
-
     def run_logic(self):
         
         x, y = self.background_center
@@ -454,7 +507,6 @@ class MainMenu(Scene):
         self.background_center = x + self.move, y + self.move
         if self.background_center[0] > GAME_GLOBALS.SCREEN_WIDTH or self.background_center[0] < 0 or self.background_center[1] > GAME_GLOBALS.SCREEN_HEIGHT or self.background_center[1] < 0:
             self.move = self.move * -1
-
 
     def display_frame(self,screen):
         self.draw_background(screen)
@@ -470,7 +522,6 @@ class MainMenu(Scene):
         self.move = 1
         for hex in self.grid.hexes.values():
             self.hex_colors[hex.coords.tuple()] = random.choice(GAME_GLOBALS.RESOURCE_TO_COLOR)
-
 
     def draw_background(self,screen):
         screen.fill(GAME_GLOBALS.BLUE)
@@ -492,7 +543,6 @@ class MainMenu(Scene):
         y = y - h/2
 
         pygame.draw.rect(screen,GAME_GLOBALS.BLACK,(x,y,w,h))
-
 
     def draw_start_button(self,screen):
         center_x, center_y = GAME_GLOBALS.SCREEN_CENTER
@@ -516,3 +566,4 @@ class MainMenu(Scene):
         mouse_x, mouse_y = mouse_pos
         return mouse_x >= x and mouse_x < x + w and mouse_y >= y and mouse_y < y + h
 
+        
