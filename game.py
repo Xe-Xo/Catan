@@ -127,6 +127,22 @@ class Scene():
         hex_x = 0 - hex_y - hex_z
         return Coords(hex_x,hex_y,hex_z).round(set_total=set_sign) 
 
+    def point_to_corner_coord(self,center_xy,xy_point):
+
+        pointx, pointy = xy_point
+        nx, ny, nz = self.point_to_grid_coord(center_xy,xy_point,set_sign=-1).tuple()
+        px, py, pz = self.point_to_grid_coord(center_xy,xy_point,set_sign=1).tuple()
+        negposx, negposy = self.coord_to_point(center_xy,nx,ny,nz,gap=False)
+        posposx, posposy = self.coord_to_point(center_xy,px,py,pz,gap=False)
+
+        negdistance = math.pow(pointx - negposx,2) + math.pow(pointy - negposy,2) 
+        posdisance = math.pow(pointx - posposx,2) + math.pow(pointy - posposy,2)
+
+        if negdistance < posdisance:
+            return self.point_to_grid_coord(center_xy,xy_point,set_sign=-1)
+        else:
+            return self.point_to_grid_coord(center_xy,xy_point,set_sign=1)
+
     def coord_to_point(self,center_xy,x,y,z,gap=True):
         #starting center point generally the xy of 0,0,0 hexagon
         #however this changes if finding the points of a hexagon not in the center
@@ -202,7 +218,8 @@ class Game(Scene):
                 return True, self
             elif self.current_game_state == "place_settlement":
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    coord_pointing = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos())
+                    coord_pointing = self.point_to_corner_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos()).round()
+                    print(coord_pointing,self.valid_settlement(self.turn,coord_pointing))
                     if self.valid_settlement(self.turn,coord_pointing):
                         self.place_settlement(self.turn,coord_pointing)
                         self.next_game_state()
@@ -227,9 +244,9 @@ class Game(Scene):
         elif self.current_game_state == "place_settlement":
             self.display_place_settlement(screen,self.turn)
         elif self.current_game_state == "place_road":
-            self.display_place_road(self,self.turn)
+            self.display_place_road(screen,self.turn)
         elif self.current_game_state == "player_turn":
-            self.display_default(self,self.turn)
+            self.display_default(screen,self.turn)
         pygame.display.update()
 
 
@@ -280,7 +297,7 @@ class Game(Scene):
         return self.players[self.next_player_index(player.playerindex)]
 
     def place_settlement(self,player_index,coords):
-        self.settlements[coords] = player_index
+        self.settlements[coords.tuple()] = player_index
 
     """Game State Methods"""
 
@@ -295,8 +312,8 @@ class Game(Scene):
         #TO DO - this is complicated when it really shouldnt be.
         #clean up this trainwreck
 
-        if coords in self.grid.corners.keys():
-            corner_selected = self.grid.corners[coords]
+        try:
+            corner_selected = self.grid.corners[coords.tuple()]
             for other_corners_coords in corner_selected.connected_corner_coords():
                 try:
                     if self.settlements[other_corners_coords] != -1: 
@@ -310,7 +327,9 @@ class Game(Scene):
                 return False
             else:
                 return True
-        else:
+
+        except KeyError:
+            print("KeyError")
             return False
 
     def valid_road(self,player_id,roadcoords):
@@ -473,6 +492,14 @@ class Game(Scene):
             except:
                 print(color)
             self.text_to_screen(screen,self.corner_ranks[corner.coords.tuple()],self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,cx,cy,cz,gap=False),size=16)
+
+    def draw_valid_settlements(self,screen,player_index):
+        for corner in self.grid.corners.values():
+            if self.valid_settlement(player_index,corner.coords,limit_by_road=False):
+                pygame.draw.circle(screen, GAME_GLOBALS.LIGHT_GRAY,self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,corner.coords.x,corner.coords.y,corner.coords.z,gap=False),int(GAME_GLOBALS.ALPHA/4))
+
+
+
 
 
 class MainMenu(Scene):
