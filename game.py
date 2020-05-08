@@ -236,7 +236,10 @@ class Game(Scene):
         return self.game_over, self
 
     def run_logic(self):
-        pass
+
+        #temporary skip logic
+        if self.current_game_state == "place_road":
+            self.next_game_state()
 
     def display_frame(self,screen):
         if self.debug == True:
@@ -258,16 +261,21 @@ class Game(Scene):
     def display_place_settlement(self,screen,playerindex):
         self.draw_background(screen)
         self.draw_hexes(screen)
+        self.draw_hexes_scarcity(screen)
         self.draw_game_state(screen)
+        self.draw_roads(screen)
         self.draw_valid_settlements(screen,playerindex)
-        #self.draw_roads(screen)
+        self.draw_corners_ranks(screen)
+        self.draw_settlements(screen)
 
     def display_place_road(self,screen,playerindex):
         self.draw_background(screen)
         self.draw_hexes(screen)
-        #self.draw_settlements(screen)
-        #self.draw_roads(screen)
-        #self.draw_allowed_roads(screen,playerindex)
+        self.draw_hexes_scarcity(screen)
+        self.draw_game_state(screen)
+        self.draw_settlements(screen)
+        self.draw_roads(screen)
+        self.draw_valid_roads(screen,playerindex)
 
 
     """Player Methods"""
@@ -457,7 +465,9 @@ class Game(Scene):
             hx, hy, hz = hex.coords.tuple()
             resource_color = GAME_GLOBALS.RESOURCE_TO_COLOR[self.grid_resources[hex.coords.tuple()]]
             pygame.draw.polygon(screen,GAME_GLOBALS.LIGHT_YELLOW, self.hex_corners(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False))
+            pygame.draw.polygon(screen,GAME_GLOBALS.BLACK, self.hex_corners(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False),2)
             pygame.draw.polygon(screen,resource_color, self.hex_corners(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz))
+
 
             number = self.grid_numbers[hex.coords.tuple()]
             self.text_to_screen(screen,number,self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False),size=20)
@@ -475,7 +485,16 @@ class Game(Scene):
             string = "".join(int(number) * ['*'])
             self.text_to_screen(screen,string,self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False),size=20,offset=(0,10))
 
-    def draw_corners(self,screen):
+    def draw_settlements(self,screen):
+        for corner in self.grid.corners.values():
+            try:
+                settlementplayer = self.settlements[corner.coords.tuple()]
+                if settlementplayer != -1:
+                    pygame.draw.circle(screen, self.players[settlementplayer].color,self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,corner.coords.x,corner.coords.y,corner.coords.z,gap=False),int(GAME_GLOBALS.ALPHA/4))
+            except KeyError as e:
+                print(corner.tuple())
+    
+    def draw_roads(self,screen):
         pass
 
     def draw_game_state(self,screen):
@@ -488,7 +507,7 @@ class Game(Scene):
             color = self.fix_color((int(255/14*(self.corner_ranks[corner.coords.tuple()]-1)),150,150))
             
             try:
-                pygame.draw.circle(screen, color, self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER, cx, cy, cz, gap=False),int(GAME_GLOBALS.ALPHA/4))
+                pygame.draw.circle(screen, color, self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER, cx, cy, cz, gap=False),int(GAME_GLOBALS.ALPHA/4),2)
             except:
                 print(color)
             self.text_to_screen(screen,self.corner_ranks[corner.coords.tuple()],self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,cx,cy,cz,gap=False),size=16)
@@ -498,8 +517,8 @@ class Game(Scene):
             if self.valid_settlement(player_index,corner.coords,limit_by_road=False):
                 pygame.draw.circle(screen, GAME_GLOBALS.LIGHT_GRAY,self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,corner.coords.x,corner.coords.y,corner.coords.z,gap=False),int(GAME_GLOBALS.ALPHA/4))
 
-
-
+    def draw_valid_roads(self,screen,player_index):
+        pass
 
 
 class MainMenu(Scene):
