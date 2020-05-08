@@ -21,6 +21,31 @@ class GAME_GLOBALS():
     MOCCASIN = (255,228,181)
     LIGHT_YELLOW = (255,255,224)
 
+    #RGB codes sourced from https://www.pinterest.com.au/pin/238339005262876109/
+
+    BEAUTIFUL_BLUE = (0,104,132)
+    BEAUTIFUL_AQUA = (0,144,158)
+    BEAUTIFUL_LIGHT_BLUE = (137,219,236)
+    BEAUTIFUL_RED = (237,0,38)
+    BEAUTIFUL_ORANGE = (250, 157, 0)
+    BEAUTIFUL_SAND = (255,208,141)
+    BEAUTIFUL_ROSE = (176,0,81)
+    BEAUTIFUL_PEACH = (246,131,112)
+    BEAUTIFUL_PINK = (254,171,185)
+    BEAUTIFUL_PURPLE = (110,0,108)
+    BEAUTIFUL_LIGHT_PURPLE = (145,39,143)
+    BEAUTIFUL_GREEN = (149,212,122)
+    BEAUTIFUL_YELLOW = (254,226,62)
+
+    PLAYER_COLORS = [BEAUTIFUL_BLUE,BEAUTIFUL_GREEN,BEAUTIFUL_RED,BEAUTIFUL_YELLOW]
+
+    ORE_COLOR = (145,134,126)
+    WHEAT_COLOR = (201,194,127)
+    SHEEP_COLOR = (178,200,145)
+    BRICK_COLOR = (228,153,105)
+    WOOD_COLOR = (116,161,142)
+    ROBBER_COLOR = (185,156,107)
+
     POS_X = (1,0,0)
     NEG_X = (-1,0,0)
     POS_Y = (0,1,0)
@@ -28,7 +53,7 @@ class GAME_GLOBALS():
     POS_Z = (0,0,1)
     NEG_Z = (0,0,-1)
 
-    RESOURCE_TO_COLOR = [DARK_GREEN,RED,DARK_GRAY,KHAKI,LIGHT_GRAY,OLIVE]
+    RESOURCE_TO_COLOR = [WOOD_COLOR,BRICK_COLOR,ORE_COLOR,WHEAT_COLOR,SHEEP_COLOR,ROBBER_COLOR]
 
     SCREEN_WIDTH = 1200
     SCREEN_HEIGHT = 800
@@ -40,7 +65,7 @@ class GAME_GLOBALS():
     NUMBER_HEXES_WIDTH = GRID_SIZE*2+1
 
     HEX_DIAMETER = min(SCREEN_WIDTH/3*2,SCREEN_HEIGHT)/NUMBER_HEXES_WIDTH
-    HEX_GAP = HEX_DIAMETER/3
+    HEX_GAP = HEX_DIAMETER/4
     G_HEX_DIAMETER = HEX_DIAMETER - HEX_GAP
     ALPHA = HEX_DIAMETER/4
     BETA = math.sqrt(3) * ALPHA
@@ -249,7 +274,7 @@ class Game(Scene):
         elif self.current_game_state == "place_road":
             self.display_place_road(screen,self.turn)
         elif self.current_game_state == "player_turn":
-            self.display_default(screen,self.turn)
+            self.display_player_turn(screen,self.turn)
         pygame.display.update()
 
 
@@ -277,6 +302,14 @@ class Game(Scene):
         self.draw_roads(screen)
         self.draw_valid_roads(screen,playerindex)
 
+    def display_player_turn(self,screen,player_index):
+        self.draw_background(screen)
+        self.draw_hexes(screen)
+        self.draw_hexes_scarcity(screen)
+        self.draw_game_state(screen)
+        self.draw_corners_ranks(screen)
+        self.draw_settlements(screen)
+        self.draw_roads(screen)
 
     """Player Methods"""
 
@@ -298,8 +331,7 @@ class Game(Scene):
         next_player_index = current_player_index + 1
         if next_player_index >= 4:
             return 0
-        else:
-            next_player_index
+        return next_player_index
 
     def next_player(self,player):
         return self.players[self.next_player_index(player.playerindex)]
@@ -324,7 +356,7 @@ class Game(Scene):
             corner_selected = self.grid.corners[coords.tuple()]
             for other_corners_coords in corner_selected.connected_corner_coords():
                 try:
-                    if self.settlements[other_corners_coords] != -1: 
+                    if self.settlements[other_corners_coords.tuple()] != -1: 
                         return False
                 except:
                     pass
@@ -470,7 +502,7 @@ class Game(Scene):
 
 
             number = self.grid_numbers[hex.coords.tuple()]
-            self.text_to_screen(screen,number,self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False),size=20)
+            self.text_to_screen(screen,number,self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False),size=20,color=GAME_GLOBALS.WHITE)
 
     def draw_hexes_scarcity(self,screen):
         for hex in self.grid.hexes.values():
@@ -483,14 +515,14 @@ class Game(Scene):
             roll_rank_of_hex = GAME_GLOBALS.ROLL_RANK[self.grid_numbers[(hx,hy,hz)]]
             number = round(roll_rank_of_hex/resource_scarcity,2)
             string = "".join(int(number) * ['*'])
-            self.text_to_screen(screen,string,self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False),size=20,offset=(0,10))
+            self.text_to_screen(screen,string,self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False),size=20,offset=(0,10),color=GAME_GLOBALS.WHITE)
 
     def draw_settlements(self,screen):
         for corner in self.grid.corners.values():
             try:
                 settlementplayer = self.settlements[corner.coords.tuple()]
                 if settlementplayer != -1:
-                    pygame.draw.circle(screen, self.players[settlementplayer].color,self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,corner.coords.x,corner.coords.y,corner.coords.z,gap=False),int(GAME_GLOBALS.ALPHA/4))
+                    pygame.draw.circle(screen, GAME_GLOBALS.PLAYER_COLORS[settlementplayer],self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,corner.coords.x,corner.coords.y,corner.coords.z,gap=False),int(GAME_GLOBALS.ALPHA/4))
             except KeyError as e:
                 print(corner.tuple())
     
@@ -504,13 +536,14 @@ class Game(Scene):
     def draw_corners_ranks(self,screen):
         for corner in self.grid.corners.values():
             cx,cy,cz = corner.coords.tuple()
-            color = self.fix_color((int(255/14*(self.corner_ranks[corner.coords.tuple()]-1)),150,150))
+            if self.valid_settlement(1,corner.coords):
+                color = self.fix_color((int(255/14*(self.corner_ranks[corner.coords.tuple()]-1)),150,150))
             
-            try:
-                pygame.draw.circle(screen, color, self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER, cx, cy, cz, gap=False),int(GAME_GLOBALS.ALPHA/4),2)
-            except:
-                print(color)
-            self.text_to_screen(screen,self.corner_ranks[corner.coords.tuple()],self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,cx,cy,cz,gap=False),size=16)
+                try:
+                    pygame.draw.circle(screen, color, self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER, cx, cy, cz, gap=False),int(GAME_GLOBALS.ALPHA/4),2)
+                except:
+                    print(color)
+                self.text_to_screen(screen,self.corner_ranks[corner.coords.tuple()],self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,cx,cy,cz,gap=False),size=16)
 
     def draw_valid_settlements(self,screen,player_index):
         for corner in self.grid.corners.values():
