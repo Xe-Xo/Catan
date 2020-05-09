@@ -173,15 +173,6 @@ class Road():
     def neg_corner(self):
         return self.grid[self.neg_coords.tuple()]
 
-    def weird_tuple(self):
-        ncx, ncy, ncz = self.neg_coords.tuple()
-        pcx, pcy, pcz = self.pos_coords.tuple()
-        if ncx == pcx:
-            return pcx*2,pcy,pcz
-        elif ncy == pcy:
-            return pcx, pcy*2, pcz
-        elif ncz == pcz:
-            return pcx, pcy, pcz*2
 
 class Direction():
 
