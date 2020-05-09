@@ -45,6 +45,8 @@ class GAME_GLOBALS():
     BRICK_COLOR = (228,153,105)
     WOOD_COLOR = (116,161,142)
     ROBBER_COLOR = (185,156,107)
+    SEA_COLOR = (21,52,80)
+    SAND_COLOR = LIGHT_YELLOW
 
     POS_X = (1,0,0)
     NEG_X = (-1,0,0)
@@ -71,6 +73,9 @@ class GAME_GLOBALS():
     BETA = math.sqrt(3) * ALPHA
     G_ALPHA = (G_HEX_DIAMETER)/4
     G_BETA = math.sqrt(3) * G_ALPHA
+
+    ROAD_LENGTH = HEX_DIAMETER/4
+    ROAD_THICKNESS = ROAD_LENGTH/10
 
     ROLL_RANK =   {
                         2:1,
@@ -210,6 +215,58 @@ class Scene():
             new_color_list.append(new_color)
         return tuple(new_color_list)
 
+    def road_xy(self,screen,road_tuple):
+
+       
+        x1, y1, x2, y2 = road_tuple
+        z1 = -1 - x1 - y1
+        z2 = 1 - x2 - y2
+
+        cx1,cy1 = self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,x1,y1,z1,gap=False)
+        cx2,cy2 = self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,x2,y2,z2,gap=False)
+        
+        nx1,nx2 = cx1 + (cx2 - cx1)/5 , cx2 - (cx2 - cx1)/5
+        ny1,ny2 = cy1 + (cy2 - cy1)/5 , cy2 - (cy2 - cy1)/5
+
+        return ((nx1,ny1),(nx2,ny2))
+
+    def road_rect(self,screen,road_tuple):
+
+        #return list of points to draw rect
+
+        x1, y1, x2, y2 = road_tuple
+        z1 = -1 - x1 - y1
+        z2 = 1 - x2 - y2
+
+        cx1,cy1 = self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,x1,y1,z1,gap=False)
+        cx2,cy2 = self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,x2,y2,z2,gap=False)
+
+        x_delta = cx2 - cx1
+        y_delta = cy2 - cy1
+
+        hypot = math.sqrt(math.pow(x_delta,2) + math.pow(y_delta,2))
+        n = (hypot-GAME_GLOBALS.ROAD_LENGTH)/2
+
+        iX = n * x_delta/hypot
+        iY = n * y_delta/hypot
+
+        try:
+            angle = math.atan(y_delta/x_delta)
+            xmove = math.sin(angle) * GAME_GLOBALS.ROAD_THICKNESS
+            ymove = math.cos(angle) * GAME_GLOBALS.ROAD_THICKNESS
+        except ZeroDivisionError:
+            xmove = GAME_GLOBALS.ROAD_THICKNESS
+            ymove = 0
+
+
+        p1 = cx1 + iX - xmove, cy1 + iY + ymove
+        p2 = cx1 + iX + xmove, cy1 + iY - ymove
+        p3 = cx2 - iX + xmove, cy2 - iY - ymove
+        p4 = cx2 - iX - xmove, cy2 - iY + ymove
+
+        return [p1,p2,p3,p4]
+
+
 class Game(Scene):
 
     """This class represents an instance of the game""" 
@@ -244,7 +301,6 @@ class Game(Scene):
             elif self.current_game_state == "place_settlement":
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     coord_pointing = self.point_to_corner_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos()).round()
-                    print(coord_pointing,self.valid_settlement(self.turn,coord_pointing))
                     if self.valid_settlement(self.turn,coord_pointing):
                         self.place_settlement(self.turn,coord_pointing)
                         self.next_game_state()
@@ -288,10 +344,10 @@ class Game(Scene):
         self.draw_hexes(screen)
         self.draw_hexes_scarcity(screen)
         self.draw_game_state(screen)
-        self.draw_roads(screen)
         self.draw_valid_settlements(screen,playerindex)
         self.draw_corners_ranks(screen)
         self.draw_settlements(screen)
+        self.draw_roads(screen)
 
     def display_place_road(self,screen,playerindex):
         self.draw_background(screen)
@@ -299,15 +355,15 @@ class Game(Scene):
         self.draw_hexes_scarcity(screen)
         self.draw_game_state(screen)
         self.draw_settlements(screen)
-        self.draw_roads(screen)
         self.draw_valid_roads(screen,playerindex)
+        self.draw_roads(screen)
+
 
     def display_player_turn(self,screen,player_index):
         self.draw_background(screen)
         self.draw_hexes(screen)
         self.draw_hexes_scarcity(screen)
         self.draw_game_state(screen)
-        self.draw_corners_ranks(screen)
         self.draw_settlements(screen)
         self.draw_roads(screen)
 
@@ -354,6 +410,9 @@ class Game(Scene):
 
         try:
             corner_selected = self.grid.corners[coords.tuple()]
+            if self.settlements[coords.tuple()] != -1:
+                return False
+
             for other_corners_coords in corner_selected.connected_corner_coords():
                 try:
                     if self.settlements[other_corners_coords.tuple()] != -1: 
@@ -490,13 +549,13 @@ class Game(Scene):
     """Render Methods"""
 
     def draw_background(self,screen):
-        screen.fill(GAME_GLOBALS.BLUE)
+        screen.fill(GAME_GLOBALS.SEA_COLOR)
 
     def draw_hexes(self,screen):
         for hex in self.grid.hexes.values():
             hx, hy, hz = hex.coords.tuple()
             resource_color = GAME_GLOBALS.RESOURCE_TO_COLOR[self.grid_resources[hex.coords.tuple()]]
-            pygame.draw.polygon(screen,GAME_GLOBALS.LIGHT_YELLOW, self.hex_corners(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False))
+            pygame.draw.polygon(screen,GAME_GLOBALS.SAND_COLOR, self.hex_corners(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False))
             pygame.draw.polygon(screen,GAME_GLOBALS.BLACK, self.hex_corners(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False),2)
             pygame.draw.polygon(screen,resource_color, self.hex_corners(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz))
 
@@ -527,8 +586,13 @@ class Game(Scene):
                 print(corner.tuple())
     
     def draw_roads(self,screen):
-        pass
+        for road in self.grid.roads.values():
+            roadplayer = self.roads[road.coords_tuple()]
+            if roadplayer != -1:
+                pointslist = self.road_rect(screen,road.coords_tuple())
+                pygame.draw.polygon(screen, GAME_GLOBALS.PLAYER_COLORS[roadplayer], pointslist)
 
+                
     def draw_game_state(self,screen):
         self.text_to_screen(screen,self.current_game_state,(100,100),size=32,color=GAME_GLOBALS.RED)
         self.text_to_screen(screen,self.turn,(150,150),size=32,color=GAME_GLOBALS.RED)
@@ -603,12 +667,12 @@ class MainMenu(Scene):
             self.hex_colors[hex.coords.tuple()] = random.choice(GAME_GLOBALS.RESOURCE_TO_COLOR)
 
     def draw_background(self,screen):
-        screen.fill(GAME_GLOBALS.BLUE)
+        screen.fill(GAME_GLOBALS.SEA_COLOR)
 
         for hex in self.grid.hexes.values():
             hx, hy, hz = hex.coords.tuple()
             resource_color = self.hex_colors[hx,hy,hz] 
-            pygame.draw.polygon(screen,GAME_GLOBALS.LIGHT_YELLOW, self.hex_corners(self.background_center,hx,hy,hz,gap=False))
+            pygame.draw.polygon(screen,GAME_GLOBALS.SAND_COLOR, self.hex_corners(self.background_center,hx,hy,hz,gap=False))
             pygame.draw.polygon(screen,resource_color, self.hex_corners(self.background_center,hx,hy,hz))
 
     def draw_title(self,screen):
