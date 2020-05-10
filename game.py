@@ -334,6 +334,8 @@ class Game(Scene):
         pygame.display.update()
 
 
+
+
     """Display Methods"""
 
     def display_debug(self,screen):
@@ -348,6 +350,7 @@ class Game(Scene):
         self.draw_corners_ranks(screen)
         self.draw_settlements(screen)
         self.draw_roads(screen)
+        self.draw_chatwindow(screen)
 
     def display_place_road(self,screen,playerindex):
         self.draw_background(screen)
@@ -709,4 +712,8 @@ class MainMenu(Scene):
         mouse_x, mouse_y = mouse_pos
         return mouse_x >= x and mouse_x < x + w and mouse_y >= y and mouse_y < y + h
 
+
+
         
+
+
