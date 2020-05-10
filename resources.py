@@ -27,6 +27,7 @@ class ResourceBunch():
     def SHEEP():
         return ResourceBunch(0,0,0,0,1)
 
+
     def from_tuple(tuple):
         return ResourceBunch(tuple[0],tuple[1],tuple[2],tuple[3],tuple[4])
 
@@ -41,6 +42,7 @@ class ResourceBunch():
         self.wheat = wheat
         self.sheep = sheep
         self.tuple = (wood,brick,ore,wheat,sheep)
+        self.total = self.wood + self.brick + self.ore + self.wheat + self.sheep
 
     def __add__(self,other):
         return ResourceBunch(self.wood+other.wood,self.brick+other.brick,self.ore+other.ore,self.wheat+other.wheat,self.sheep+other.sheep)
@@ -114,8 +116,10 @@ class ResourceBunch():
         return hash(self.tuple)
 
     def __repr__(self):
-        return f"Wd:{self.wood}, Br:{self.brick}, Or:{self.ore}, Wh:{self.wheat}, Sh:{self.sheep}"
-    
+        #return f"(Wd{self.wood},B{self.brick},O{self.ore},Wh{self.wheat},S{self.sheep})"
+        return f"{self.tuple}"
+
+
     def discard(self,other):
         return ResourceBunch(self.clamp(self.wood-other.wood,0),self.clamp(self.brick-other.brick,0),self.clamp(self.ore-other.ore,0),self.clamp(self.wheat-other.wheat,0),self.clamp(self.sheep-other.sheep,0))
         
@@ -182,8 +186,27 @@ class ResourceBunch():
         return possible_discards
 
 
+class Trade():
+    def __init__(self,resource_give,resource_recieve,weights=(0.2,0.2,0.2,0.2,0.2)):
+        pass
+
+
+
+
+    
+        
+
 if __name__ == "__main__":
     
-    test = ResourceBunch(2,2,1,1,1)
-    for rb in test.possible_discards_to_rb(ResourceBunch.ROAD()*2):
-        print(rb,rb.count())
+    #test = ResourceBunch(3,3,3,3,3)
+    #trade_discard_opt = ResourceBunch.ANY(3)
+    #trade_receive_opt = ResourceBunch.ANY(1)
+    #trade_opt = []
+    #trade_opt.append([trade_discard_opt,trade_receive_opt])
+
+    #print(test.trade_offset(trade_opt))
+
+    #options = test.trade_options(trade_opt)
+    #offsets = test.trade_offset(trade_opt)
+    #value 
+    pass
