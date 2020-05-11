@@ -1,5 +1,3 @@
-from grid import *
-from game import *
+from game import GAME_GLOBALS
 
-game = Game()
-print(game.calculate_resource_scarcity())
+print(GAME_GLOBALS.ColorRange(GAME_GLOBALS.KHAKI,GAME_GLOBALS.MOCCASIN,3))
