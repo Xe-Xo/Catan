@@ -91,6 +91,27 @@ class GAME_GLOBALS():
                         12:1
                         }
 
+    def ColorRange(color1,color2,additional_steps=0):
+        colorlist = []
+        c1r, c1g, c1b = color1
+        c2r, c2g, c2b = color2
+
+        sr, sg, sb = c2r - c1r, c2g - c1g, c2b - c1b
+        colorlist.append(color1)
+        for step in range(0,additional_steps):
+            newcolor = int(c1r + sr/additional_steps*step+1), int(c1g + sg/additional_steps*step+1), int(c1b + sb/additional_steps*step+1)
+            colorlist.append(newcolor)
+        colorlist.append(color2)
+        return colorlist
+
+
+
+
+
+
+
+
+
 class Scene():
 
     """This class represents an instance of the gamestate"""
