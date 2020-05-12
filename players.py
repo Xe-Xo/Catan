@@ -8,8 +8,10 @@ class Player():
         self.resources = ResourceBunch(0,0,0,0,0)
         self.playerindex = playerindex
 
+
     def add_resouces(self,resourcebunch):
         self.resources = self.resources + resourcebunch
+        print(f"Player {self.playerindex} received {resourcebunch}")
 
     def discard_resouces(self,resourcebunch):
         self.resources = self.resources.discard(resourcebunch)

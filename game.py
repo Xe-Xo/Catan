@@ -91,6 +91,27 @@ class GAME_GLOBALS():
                         12:1
                         }
 
+    def ColorRange(color1,color2,additional_steps=0):
+        colorlist = []
+        c1r, c1g, c1b = color1
+        c2r, c2g, c2b = color2
+
+        sr, sg, sb = c2r - c1r, c2g - c1g, c2b - c1b
+        colorlist.append(color1)
+        for step in range(0,additional_steps):
+            newcolor = int(c1r + sr/additional_steps*step+1), int(c1g + sg/additional_steps*step+1), int(c1b + sb/additional_steps*step+1)
+            colorlist.append(newcolor)
+        colorlist.append(color2)
+        return colorlist
+
+
+
+
+
+
+
+
+
 class Scene():
 
     """This class represents an instance of the gamestate"""
@@ -155,6 +176,7 @@ class Scene():
         hex_y = -2*pixel_x/(math.sqrt(3)*GAME_GLOBALS.HEX_DIAMETER) + (2*pixel_y)/(3*GAME_GLOBALS.HEX_DIAMETER)
         hex_z = 0*pixel_x + -4*pixel_y/(3*GAME_GLOBALS.HEX_DIAMETER)
         hex_x = 0 - hex_y - hex_z
+        print(Coords(hex_x,hex_y,hex_z),Coords(hex_x,hex_y,hex_z).round(set_total=set_sign),set_sign)
         return Coords(hex_x,hex_y,hex_z).round(set_total=set_sign) 
 
     def point_to_corner_coord(self,center_xy,xy_point):
@@ -275,6 +297,9 @@ class Game(Scene):
         super().__init__()
 
         self.debug = False
+        self.road_hover_tuple = None
+        self.grid_hover_tuple = None
+        self.corner_hover_tuple = None
         """Constructor. create all our attributes and initialise the game"""
         self.game_over = False
 
@@ -292,6 +317,11 @@ class Game(Scene):
         self.setup_ports()
         self.setup_roads()
 
+        self.settlements_placed = [] #round, player_id, settlement_tuple
+        self.roads_placed = [] #round, player_id, road_tuple
+
+        self.round = 0
+
     def process_events(self):
         """Process all the events. Return a True if we need to close the Window"""
         
@@ -300,27 +330,49 @@ class Game(Scene):
                 return True, self
             elif self.current_game_state == "place_settlement":
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    coord_pointing = self.point_to_corner_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos()).round()
+                    coord_pointing = self.point_to_corner_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos())
                     if self.valid_settlement(self.turn,coord_pointing):
-                        self.place_settlement(self.turn,coord_pointing)
+                        self.place_settlement(self.turn,coord_pointing,self.round)
                         self.next_game_state()
                         return False,self
+                else:
+                    self.corner_hover_tuple = self.point_to_corner_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos())
+                
             elif self.current_game_state == "place_road":
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     coord_pointing_neg = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=-1)
                     coord_pointing_pos = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=1)
                     road_pos = (coord_pointing_neg.x, coord_pointing_neg.y, coord_pointing_pos.x, coord_pointing_pos.y)
                     if self.valid_road(self.turn,road_pos):
-                        self.place_road(self.turn, road_pos)
+                        self.place_road(self.turn, road_pos,self.round)
                         self.next_game_state()
                         return False,self
+                else:
+                    coord_pointing_neg = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=-1)
+                    coord_pointing_pos = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=1)
+                    self.road_hover_tuple = (coord_pointing_neg.x, coord_pointing_neg.y, coord_pointing_pos.x, coord_pointing_pos.y)
+         
+
+
+            elif self.current_game_state == "debug":
+                coord_pointing_neg = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=-1)
+                coord_pointing_pos = self.point_to_grid_coord(GAME_GLOBALS.SCREEN_CENTER,pygame.mouse.get_pos(),set_sign=1)
+                road_pos = (coord_pointing_neg.x, coord_pointing_neg.y, coord_pointing_pos.x, coord_pointing_pos.y)
+                self.debug_road_tuple = road_pos
+
+
         return self.game_over, self
 
     def run_logic(self):
-
-        #temporary skip logic
-        if self.current_game_state == "place_road":
+        if self.current_game_state == "allocate_initial_resources":
+            for round, turn, settlement_tuple in self.settlements_placed:
+                if round == 1:
+                    hex_coords = self.grid.corners[settlement_tuple].connected_hexes_coords()
+                    for hex in hex_coords:
+                        resource_index = self.grid_resources[hex.tuple()]
+                        self.players[turn].add_resouces(ResourceBunch.from_index(resource_index))
             self.next_game_state()
+
 
     def display_frame(self,screen):
         if self.debug == True:
@@ -334,12 +386,14 @@ class Game(Scene):
         pygame.display.update()
 
 
-
-
     """Display Methods"""
 
     def display_debug(self,screen):
-        pass
+        self.draw_background(screen)
+        self.draw_hexes(screen)
+        self.draw_roads(screen)
+        self.draw_potential_road(screen,self.debug_road_tuple)
+
 
     def display_place_settlement(self,screen,playerindex):
         self.draw_background(screen)
@@ -350,7 +404,6 @@ class Game(Scene):
         self.draw_corners_ranks(screen)
         self.draw_settlements(screen)
         self.draw_roads(screen)
-        self.draw_chatwindow(screen)
 
     def display_place_road(self,screen,playerindex):
         self.draw_background(screen)
@@ -360,6 +413,7 @@ class Game(Scene):
         self.draw_settlements(screen)
         self.draw_valid_roads(screen,playerindex)
         self.draw_roads(screen)
+        
 
 
     def display_player_turn(self,screen,player_index):
@@ -378,10 +432,11 @@ class Game(Scene):
         for playerindex in range(0,4):
             self.players.append(Human(playerindex))
 
-        self.game_state_queue =    [(0,"place_settlement"),(0,"place_road"),(1,"place_settlement"),(1,"place_road"),
-                                    (2,"place_settlement"),(2,"place_road"),(3,"place_settlement"),(3,"place_road"),
-                                    (3,"place_settlement"),(3,"place_road"),(2,"place_settlement"),(2,"place_road"),
-                                    (1,"place_settlement"),(1,"place_road"),(0,"place_settlement"),(0,"place_road")
+        self.game_state_queue =    [((0,0),"place_settlement"),((0,0),"place_road"),((0,1),"place_settlement"),((0,1),"place_road"),
+                                    ((0,2),"place_settlement"),((0,2),"place_road"),((0,3),"place_settlement"),((0,3),"place_road"),
+                                    ((1,3),"place_settlement"),((1,3),"place_road"),((1,2),"place_settlement"),((1,2),"place_road"),
+                                    ((1,1),"place_settlement"),((1,1),"place_road"),((1,0),"place_settlement"),((1,0),"place_road"),
+                                    ((2,0),"allocate_initial_resources"),((2,0),"player_turn")
                                     ]
 
         self.next_game_state()
@@ -389,22 +444,29 @@ class Game(Scene):
     def next_player_index(self,current_player_index):
         next_player_index = current_player_index + 1
         if next_player_index >= 4:
-            return 0
-        return next_player_index
+            return self.turn + 1, 0
+        return self.turn, next_player_index
 
     def next_player(self,player):
         return self.players[self.next_player_index(player.playerindex)]
 
-    def place_settlement(self,player_index,coords):
+    def place_settlement(self,player_index,coords,round):
+        print(f"set settlement {coords.tuple()} --> {player_index}")
+        self.settlements_placed.append((round,player_index,coords.tuple()))
         self.settlements[coords.tuple()] = player_index
+
+    def place_road(self,player_index,road_tuple,round):
+        print(f"set road {road_tuple} --> {player_index}")
+        self.roads_placed.append((round,player_index,road_tuple))
+        self.roads[road_tuple] = player_index
 
     """Game State Methods"""
 
     def next_game_state(self):
         try:
-            self.turn, self.current_game_state = self.game_state_queue.pop(0)
+            (self.round, self.turn), self.current_game_state = self.game_state_queue.pop(0)
         except:
-            self.turn, self.current_game_state = self.next_player_index(self.turn), "player_turn"
+            (self.round, self.turn), self.current_game_state = self.next_player_index(self.turn), "player_turn"
 
     def valid_settlement(self,player_id,coords,limit_by_road=False):
 
@@ -435,7 +497,7 @@ class Game(Scene):
             return False
 
     def valid_road(self,player_id,roadcoords):
-        pass
+        return True
 
     """Setup Grid Methods"""
 
@@ -555,6 +617,11 @@ class Game(Scene):
         screen.fill(GAME_GLOBALS.SEA_COLOR)
 
     def draw_hexes(self,screen):
+
+        for hex in self.grid.hexes.values():
+            hx, hy, hz = hex.coords.tuple()
+            pygame.draw.polygon(screen,GAME_GLOBALS.BEAUTIFUL_LIGHT_BLUE, self.hex_corners(GAME_GLOBALS.SCREEN_CENTER,hx,hy,hz,gap=False),20)
+
         for hex in self.grid.hexes.values():
             hx, hy, hz = hex.coords.tuple()
             resource_color = GAME_GLOBALS.RESOURCE_TO_COLOR[self.grid_resources[hex.coords.tuple()]]
@@ -618,8 +685,21 @@ class Game(Scene):
                 pygame.draw.circle(screen, GAME_GLOBALS.LIGHT_GRAY,self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,corner.coords.x,corner.coords.y,corner.coords.z,gap=False),int(GAME_GLOBALS.ALPHA/4))
 
     def draw_valid_roads(self,screen,player_index):
-        pass
+        for road in self.grid.roads.values():
+            if self.valid_road(player_index,road.coords_tuple()):
+                pointslist = self.road_rect(screen,road.coords_tuple())
+                pygame.draw.polygon(screen, GAME_GLOBALS.LIGHT_GRAY, pointslist)
 
+    def draw_potential_road(self,screen,road_tuple):
+        if road_tuple in self.roads.keys():
+            pointslist = self.road_rect(screen,road_tuple)
+            pygame.draw.polygon(screen, GAME_GLOBALS.BEAUTIFUL_PINK, pointslist)
+
+    def draw_potential_settlement(self,screen,settlement_tuple):
+        if settlement_tuple in self.settlements.keys():
+            sx, sy, sz = settlement_tuple
+            drawpoint = self.coord_to_point(GAME_GLOBALS.SCREEN_CENTER,sx,sy,sz,gap=False)
+            pygame.draw.circle(screen, GAME_GLOBALS.BEAUTIFUL_PINK,drawpoint,int(GAME_GLOBALS.ALPHA/4))
 
 class MainMenu(Scene):
 
@@ -679,7 +759,7 @@ class MainMenu(Scene):
             pygame.draw.polygon(screen,resource_color, self.hex_corners(self.background_center,hx,hy,hz))
 
     def draw_title(self,screen):
-        self.text_to_screen(screen,"Settlers of Catan", (GAME_GLOBALS.SCREEN_CENTER[0], 60), size=100, color=GAME_GLOBALS.GREEN)
+        self.text_to_screen(screen,"Settlers of Catan", (GAME_GLOBALS.SCREEN_CENTER[0], 60), size=100, color=GAME_GLOBALS.WHITE)
 
     def draw_menu_background(self,screen):
 
@@ -692,7 +772,7 @@ class MainMenu(Scene):
 
     def draw_start_button(self,screen):
         center_x, center_y = GAME_GLOBALS.SCREEN_CENTER
-        button_posx, button_posy = center_x, center_y - GAME_GLOBALS.SCREEN_HEIGHT/4
+        button_posx, button_posy = center_x, center_y - GAME_GLOBALS.SCREEN_HEIGHT/10
         self.make_button(screen,GAME_GLOBALS.BLACK,GAME_GLOBALS.WHITE,button_posx,button_posy,"START",["game_start"])
 
     def draw_quit_button(self,screen):

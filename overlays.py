@@ -1,6 +1,8 @@
 import pygame
 from pygame.locals import *
-from game import Scene
+from game import Scene, GAME_GLOBALS
+import random
+import math
 
 class Overlay():
 
@@ -9,6 +11,7 @@ class Overlay():
 
     def __init__(self,size,topleft):
         self.visible = False
+        self.size = size
         self.surface = pygame.Surface(size)
         self.top_left = topleft
         self.focused = False
@@ -131,6 +134,9 @@ class ChatWindow(Overlay):
                         if event.key == K_7 and '7' in self.restricted_keys: self.currentpending += '&'
                         if event.key == K_8 and '8' in self.restricted_keys: self.currentpending += '*'
                         if event.key == K_9 and '9' in self.restricted_keys: self.currentpending += '('                                                                                  
+            elif self.typing == False:
+                if event.key == K_RETURN: self.typing = True
+
 
     def show_messages(self):
         font = pygame.font.Font(None,15)
@@ -141,7 +147,7 @@ class ChatWindow(Overlay):
             message = self.messages[message_num]
             font = pygame.font.Font(None,15)
             text = font.render(message,True,(255,255,255))
-            self.surface.blit(text,(self.surface.get_width()/2,self.surface.get_height()-20-(20*(message_num+1))))
+            self.surface.blit(text,(self.surface.get_width()/2,20*(message_num+1)))
 
     def display_frame(self, screen):
         self.surface.fill((0,0,0))
@@ -149,17 +155,138 @@ class ChatWindow(Overlay):
         screen.blit(self.surface,self.top_left)
         
 
+
+class RollDice(Overlay):
+    def __init__(self,size,topleft):
+        super().__init__(size,topleft)
+        self.dice1 = 1
+        self.dice2 = 1
+        self.visible = False
+        self.frame = 0
+        self.surface = None
+
+    def process_events(self):
+        pass
+
+    def display_frame(self,screen):
+        self.surface.fill((62,150,81))
+        if self.frame < 180:
+            d1,d2 = self.rolls[math.floor(self.frame/30)]
+            self.display_dice(d1,d2)
+        else:
+            d1 = self.dice1
+            d2 = self.dice2
+            self.display_dice(d1,d2)
+            self.display_text(d1+d2,min(self.size))
+        screen.blit(self.surface,self.top_left)
+
+    def run_logic(self):
+        if self.frame > 300:
+            self.visible = False
+            self.frame = 0
+        elif self.visible:
+            self.frame += 1
+
+    def start_rolling(self,d1,d2):
+        if self.frame == 0 and not self.visible:
+            self.surface = pygame.Surface(self.size)
+            self.surface.set_alpha(255)
+            self.dice1 = d1
+            self.dice2 = d2
+            self.visible = True
+
+            self.rolls = [(0,0)] * 5
+            for randomrollnum in range(0,len(self.rolls)):
+                d1 = random.randint(1,6)
+                d2 = random.randint(1,6)
+                self.rolls[randomrollnum] = (d1,d2)
+            self.rolls.append((self.dice1,self.dice2))
+
+    def display_dice(self,dice1,dice2):
+
+        dicenum_to_pips =   {
+                            1:[(2,2)],
+                            2:[(1,1),(3,3)],
+                            3:[(1,1),(2,2),(3,3)],
+                            4:[(1,1),(3,1),(1,3),(3,3)],
+                            5:[(1,1),(3,1),(2,2),(1,3),(3,3)],
+                            6:[(1,1),(3,1),(1,2),(3,2),(1,3),(3,3)]
+                            }
+
+
+        surf_x, surf_y = self.size
+        diceside = min(surf_x/4.5, surf_y/3)
+
+        a = surf_x/2 - 2.5*diceside/2
+        b = surf_y/2 - diceside/2 
+
+        d1_top = b
+        d1_left = a
+        d1_height = diceside
+        d1_width = diceside
+
+        d2_top = b
+        d2_left = a + 1.5*diceside
+        d2_height = diceside
+        d2_width = diceside
+
+        pygame.draw.rect(self.surface,GAME_GLOBALS.WHITE,(d1_left,d1_top,d1_width,d1_height),0)
+        pygame.draw.rect(self.surface,GAME_GLOBALS.WHITE,(d2_left,d2_top,d2_width,d2_height),0)
+
+
+        for inner_x,inner_y in dicenum_to_pips[dice1]:
+            pygame.draw.circle(self.surface,GAME_GLOBALS.BLACK,self.piplocation(inner_x,inner_y,(d1_left,d1_top)),round(diceside/10))
+
+        for inner_x,inner_y in dicenum_to_pips[dice2]:
+            pygame.draw.circle(self.surface,GAME_GLOBALS.BLACK,self.piplocation(inner_x,inner_y,(d2_left,d2_top)),round(diceside/10))
+
+    def piplocation(self,x,y,dicetopleft):
+
+        surf_x, surf_y = self.size
+        inner_x = min(surf_x/4.5, surf_y/3)/5 * (x+0.5)
+        inner_y = min(surf_x/4.5, surf_y/3)/5 * (y+0.5)
+        left, top = dicetopleft
+        return int(left+inner_x), int(top+inner_y)
+
+    def display_text(self,num,textsize):
+        surf_x, surf_y = self.size
+        text = str(num)
+
+        #outer colors ---> inner colors
+
+        colors = [pygame.Color(0,0,0,155),pygame.Color(231, 111, 81,155),pygame.Color(244, 162, 97,155),pygame.Color(233, 196, 106,155)]
+
+        for c_int in range(0,len(colors)):
+            c_textsize = (1-(c_int*0.05))*textsize
+            font = pygame.font.Font(None,int(c_textsize))
+            textobj = font.render(text,True,colors[c_int])
+    
+            x_offset = textobj.get_rect().width / 2
+            y_offset = textobj.get_rect().height / 2
+
+            self.surface.blit(textobj,(surf_x/2-x_offset,surf_y/2-y_offset))
+
+
+
+
+
 class TestScene(Scene):
     def __init__(self):
         super().__init__()
 
         self.chat = ChatWindow((400,300),(0,0))
+        self.dice = RollDice((random.randint(300,800),random.randint(300,800)),(0,0))
         self.chat.focused = True
         self.chat.typing = True
     
-    def process_events(self):
-        
 
+    def run_logic(self):
+        if self.chat.messages[0] == "rd":
+            self.dice.start_rolling(random.randint(1,6),random.randint(1,6))
+        self.dice.run_logic()
+
+
+    def process_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return True, self
@@ -172,16 +299,15 @@ class TestScene(Scene):
         screen.fill((255,0,0))
         #draw overlay
         self.chat.display_frame(screen)
+        if self.dice.visible:
+            self.dice.display_frame(screen)
         pygame.display.update()
-
-
-
 
 if __name__ == "__main__":
     
     pygame.init()
 
-    screen_size = (500,500)
+    screen_size = (1200,800)
     screen = pygame.display.set_mode(screen_size)
     pygame.display.set_caption("Test Chat")
 

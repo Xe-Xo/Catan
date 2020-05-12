@@ -1,5 +1,6 @@
 
 import random
+import math
 
 def Convert_list_to_coords(list_converted):
             return Coords(list_converted[0],list_converted[1],list_converted[2])
@@ -16,6 +17,11 @@ class Coords():
         x,y,z = coords_tuple
         return Coords(x,y,z)
 
+    def index_set(index,num):
+        list_set = [0,0,0]
+        list_set[index] = num
+        return Coords.from_tuple(tuple(list_set)) 
+
     def __init__(self,x,y,z):
         self.x = x
         self.y = y
@@ -26,7 +32,13 @@ class Coords():
         self.coord_y = (0,self.y,0)
         self.coord_z = (0,0,self.z)
 
-        self.abs = abs(x) + abs(y) + abs(z)
+
+    def __len__(self):
+        return len(self.tuple())
+
+
+    def __getitem__(self, key):
+        return self.tuple()[key]
 
     def short(self):
         return (self.x,self.y)
@@ -80,31 +92,124 @@ class Coords():
         #    Neg Corners = -1
         #    Grid Locations = 0
         #    Roads are locations between Pos and Neg Corners so the road selected is the Road between Pos and Neg Corners!
+        
+        if set_total is None:
 
-        rx = round(self.x)
-        ry = round(self.y)
-        rz = round(self.z)
+            # dont try to make the result a valid location
 
-        x_dif = abs(rx - self.x)
-        y_dif = abs(ry - self.y)
-        z_dif = abs(ry - self.z)
+            rx = round(self.x)
+            ry = round(self.y)
+            rz = round(self.z)
+            return Coords(rx,ry,rz)
 
-        if x_dif > y_dif and x_dif > z_dif:
-            if set_total is None:
-                rx = self.total-ry-rz
+        elif set_total == 0:
+
+            #taking the largest rounded item and making it balance the coords
+
+            print(f"rounding {self} to 0")
+
+            rx = round(self.x)
+            ry = round(self.y)
+            rz = round(self.z)
+
+            print(rx,ry,rz)
+
+            x_dif = abs(rx - self.x)
+            y_dif = abs(ry - self.y)
+            z_dif = abs(rz - self.z)
+
+            print(x_dif,y_dif,z_dif)
+
+            if x_dif > y_dif and x_dif > z_dif:
+                rx = 0-ry-rz
+            elif y_dif > z_dif:
+                ry = 0-rx-rz
             else:
-                rx = set_total-ry-rz
-        elif y_dif > z_dif:
-            if set_total is None:
-                ry = self.total-rx-rz
-            else:
-                ry = set_total-rx-rz
-        else:
-            if set_total is None:
-                rz = self.total-rx-ry
-            else:
-                rz = set_total-rx-ry
-        return Coords(int(rx),int(ry),int(rz))
+                rz = 0-rx-ry
+            return Coords(int(rx),int(ry),int(rz))            
+
+        elif set_total == 1:
+            
+            #want the max index of only the positive difference 
+            #adjust the rounded item by that index
+            difference = self - self.round(0)
+            index, num = difference.values_with_sign(set_total).abs().max_indexnum()
+            return self.round(0) + Coords.index_set(index,set_total)
+
+        elif set_total == -1:
+            #want the max index of only the negative differences
+            #adjust the rounded item by that index
+            difference = self - self.round(0)
+            index, num = difference.values_with_sign(set_total).abs().max_indexnum()
+            return self.round(0) + Coords.index_set(index,set_total)
+
+
+
+
+    def floor(self):
+        x = math.floor(self.x)
+        y = math.floor(self.y)
+        z = math.floor(self.z)
+        return Coords(x,y,z)
+
+    def ceil(self):
+        x = math.ceil(self.x)
+        y = math.ceil(self.y)
+        z = math.ceil(self.z)
+        return Coords(x,y,z)
+
+    def min_indexnum(self):
+
+        minnum = self.tuple()[0]
+        minindex = 0
+
+        for index in range(0,len(self.tuple())):
+            if self.tuple()[index] < minnum:
+                minnum = self.tuple()[index]
+                minindex = index
+
+        return minindex, minnum
+
+    def max_indexnum(self):
+
+        maxnum = self.tuple()[0]
+        maxindex = 0
+
+        for index in range(0,len(self.tuple())):
+            if self.tuple()[index] > maxnum:
+                maxnum = self.tuple()[index]
+                maxindex = index
+
+        return maxindex, maxnum
+
+    def sign(self):
+
+        signlist = [0,0,0]
+
+        for index in range(0,len(self.tuple())):
+            try:
+                signlist[index] = self.tuple()[index]/abs(self.tuple()[index])
+            except:
+                signlist[index] = 0
+
+        return Coords.from_tuple(tuple(signlist))
+
+    def is_sign(self,sign):
+        
+        signbool = [0,0,0]
+        for index in range(0,len(signbool)):
+            signbool[index] = (self.sign().tuple()[index] == sign)*1
+
+        return Coords.from_tuple(tuple(signbool))
+
+    def values_with_sign(self,sign):
+        return self * self.is_sign(sign)
+
+    def abs(self):
+        ax = abs(self.x)
+        ay = abs(self.y)
+        az = abs(self.z)
+        return Coords(ax,ay,az)
 
 class Corner():
 
