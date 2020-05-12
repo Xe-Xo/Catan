@@ -27,6 +27,12 @@ class ResourceBunch():
     def SHEEP():
         return ResourceBunch(0,0,0,0,1)
 
+    def from_index(index_num):
+        temp = [0,0,0,0,0]
+        if index_num < 5 and index_num > 0:
+            temp[index_num] = 1
+        return ResourceBunch.from_tuple(tuple(temp))
+
     def from_tuple(tuple):
         return ResourceBunch(tuple[0],tuple[1],tuple[2],tuple[3],tuple[4])
 
