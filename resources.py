@@ -27,6 +27,11 @@ class ResourceBunch():
     def SHEEP():
         return ResourceBunch(0,0,0,0,1)
 
+    def from_index(index):
+        indexlist = [0,0,0,0,0]
+        try:
+            indexlist[index] = 1
+        return ResourceBunch.from_tuple(tuple(indexlist))
 
     def from_tuple(tuple):
         return ResourceBunch(tuple[0],tuple[1],tuple[2],tuple[3],tuple[4])
