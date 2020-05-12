@@ -1,4 +1,4 @@
 # Catan
  Settlers of Catan Clone
 
-![Gridlayout](resources/grid_layout.png)
+![Grid Layout](/readme_data/grid_layout.png?raw=true "Grid Layout")
