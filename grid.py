@@ -32,10 +32,8 @@ class Coords():
         self.coord_y = (0,self.y,0)
         self.coord_z = (0,0,self.z)
 
-
     def __len__(self):
         return len(self.tuple())
-
 
     def __getitem__(self, key):
         return self.tuple()[key]
@@ -142,9 +140,6 @@ class Coords():
             difference = self - self.round(0)
             index, num = difference.values_with_sign(set_total).abs().max_indexnum()
             return self.round(0) + Coords.index_set(index,set_total)
-
-
-
 
     def floor(self):
         x = math.floor(self.x)
@@ -277,7 +272,6 @@ class Road():
 
     def neg_corner(self):
         return self.grid[self.neg_coords.tuple()]
-
 
 class Direction():
 
