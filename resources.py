@@ -31,7 +31,9 @@ class ResourceBunch():
         indexlist = [0,0,0,0,0]
         try:
             indexlist[index] = 1
-        return ResourceBunch.from_tuple(tuple(indexlist))
+        except:
+            pass
+        return ResourceBunch(indexlist[0],indexlist[1],indexlist[2],indexlist[3],indexlist[4])
 
     def from_tuple(tuple):
         return ResourceBunch(tuple[0],tuple[1],tuple[2],tuple[3],tuple[4])
