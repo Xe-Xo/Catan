@@ -369,8 +369,11 @@ class Game(Scene):
                 if round == 1:
                     hex_coords = self.grid.corners[settlement_tuple].connected_hexes_coords()
                     for hex in hex_coords:
-                        resource_index = self.grid_resources[hex.tuple()]
-                        self.players[turn].add_resouces(ResourceBunch.from_index(resource_index))
+                        try:
+                            resource_index = self.grid_resources[hex.tuple()]
+                            self.players[turn].add_resouces(ResourceBunch.from_index(resource_index))
+                        except:
+                            pass
             self.next_game_state()
 
 
