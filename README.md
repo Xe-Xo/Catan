@@ -10,7 +10,7 @@ The Grid uses a unique coordinate system shown below.
 
 A large amount of inspiration was taken from [Red Blob](https://www.redblobgames.com/grids/hexagons/) with additional changes to account for the usage of corners and sides of hexagons in Catan.
 
-Most formulas and code is similar as long as it is adjusted to match the sign of the object on the grid you are looking for. 
+Most formulas and code is similar and adjusted to match the sign of the object (eg. Corner, line, Hex) on the grid you are looking for. 
 
 ### Coordinates
 Each coordinate shown as (x,y,z) has a property noting which object it is referencing to:
